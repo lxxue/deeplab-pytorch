@@ -114,3 +114,5 @@ _*
 *_v3plus.py
 *.json
 *.zip
+
+*.ipynb
