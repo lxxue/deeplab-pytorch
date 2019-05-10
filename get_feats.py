@@ -24,7 +24,7 @@ class MyCOCO(Dataset):
     def __getitem__(self, idx):
         image_path = os.path.join(self.data_dir, self.imgs[idx]['file_name'])
         image = cv2.imread(image_path, cv2.IMREAD_COLOR).astype(np.float32)
-        image = cv2.resize(image, (513, 513), interpolation=cv2.INTER_LINEAR)
+        image = cv2.resize(image, (321, 321), interpolation=cv2.INTER_LINEAR)
         # Mean subtraction
         image -= self.mean_bgr
         # HWC -> CHW
@@ -79,13 +79,13 @@ def main(model_type, train_fname, val_fname):
     if model_type == "aspp":
         model = MyDeepLabV2_ASPP_ResNet101(n_classes=182)
         print(model.load_state_dict(torch.load("ckpt/deeplabv2_resnet101_msc-cocostuff164k-100000.pth")))
-        train_feats = np.zeros((len(train_mycoco), 182, 1, 1), dtype=np.float32) 
-        val_feats = np.zeros((len(val_mycoco), 182, 1, 1), dtype=np.float32) 
+        train_feats = np.zeros((len(train_mycoco), 182, 10, 10), dtype=np.float32) 
+        val_feats = np.zeros((len(val_mycoco), 182, 10, 10), dtype=np.float32) 
     elif model_type == "noaspp":
         model = MyDeepLabV2_NOASPP_ResNet101(n_classes=182)
         print(model.load_state_dict(torch.load("ckpt/deeplabv2_resnet101_msc-cocostuff164k-100000.pth"), strict=False))
-        train_feats = np.zeros((len(train_mycoco), 2048, 1, 1), dtype=np.float32) 
-        val_feats = np.zeros((len(val_mycoco), 2048, 1, 1), dtype=np.float32) 
+        train_feats = np.zeros((len(train_mycoco), 2048, 5, 5), dtype=np.float32) 
+        val_feats = np.zeros((len(val_mycoco), 2048, 5, 5), dtype=np.float32) 
     else:
         print("argument must be aspp or noaspp")
 
@@ -98,11 +98,12 @@ def main(model_type, train_fname, val_fname):
     prog_bar = ProgressBar(len(train_dataloader))
     for i, data in enumerate(train_dataloader):
         train_feats[i*batch_size:(i+1)*batch_size] = \
-                F.adaptive_avg_pool2d(model(data.cuda()), (1,1)).cpu().numpy()
+                model(data.cuda()).cpu().numpy()
         prog_bar.update()
     prog_bar = ProgressBar(len(val_dataloader))
     for i, data in enumerate(val_dataloader):
-        val_feats[i*batch_size:(i+1)*batch_size] = F.adaptive_avg_pool2d(model(data.cuda())).cpu().numpy()
+        val_feats[i*batch_size:(i+1)*batch_size] = \
+                model(data.cuda()).cpu().numpy()
         prog_bar.update()
 
     np.save(train_fname, train_feats)

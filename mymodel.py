@@ -31,6 +31,7 @@ class MyMSC(nn.Module):
     def forward(self, x):
         # Original
         logits = self.base(x)
+        logits = F.interpolate(logits, size=(10, 10), mode="bilinear", align_corners=False)
         return logits
 #         print("this should not be printed")
 #         _, _, H, W = logits.shape
